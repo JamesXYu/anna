@@ -54,7 +54,8 @@
       {% endif %}
     "
     x-data="{
-      selectedOptions: {}
+      selectedOptions: {},
+      restoringOptions: false
     }"
     x-init="
       // Reset all options to null on page load for bundle sets
@@ -67,6 +68,21 @@
           selectedOptions[{{ product_option.position }}] = null;
         {% endfor %}
       }, 100);
+      
+      // Watch for option changes and restore from selectedOptions
+      {% for product_option in product.options_with_values %}
+        $watch('option{{ product_option.position }}', (value) => {
+          // If option was reset but we have it in selectedOptions, restore it
+          // Skip if we're currently restoring to prevent loops
+          if (!restoringOptions && !value && selectedOptions[{{ product_option.position }}]) {
+            restoringOptions = true;
+            setTimeout(() => {
+              option{{ product_option.position }} = selectedOptions[{{ product_option.position }}];
+              restoringOptions = false;
+            }, 150);
+          }
+        });
+      {% endfor %}
     "
   >
     {% comment %} Warning {% endcomment %}
@@ -241,12 +257,8 @@
                         option{{ product_option.position }} = null;
                         // Update variant when unselecting
                         handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', null);
-                        // Restore selection state after variant update
-                        setTimeout(() => {
-                          option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] || null;
-                        }, 100);
                       } else {
-                        // Select the option - update both values
+                        // Select the option - update both values FIRST
                         selectedOptions[{{ product_option.position }}] = newValue;
                         option{{ product_option.position }} = newValue;
                         // Update variant/price when selecting
@@ -255,10 +267,14 @@
                         {% else %}
                           handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', '{{ value.id }}');
                         {% endif %}
-                        // Restore selection state after variant update
-                        setTimeout(() => {
-                          option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] || newValue;
-                        }, 100);
+                      }
+                      // Always restore from selectedOptions after delays to ensure persistence
+                      setTimeout(() => {
+                        option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] !== undefined ? selectedOptions[{{ product_option.position }}] : option{{ product_option.position }};
+                      }, 300);
+                      setTimeout(() => {
+                        option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] !== undefined ? selectedOptions[{{ product_option.position }}] : option{{ product_option.position }};
+                      }, 800);
                       }
                       dropdown = false;
                       drag_drawer = false;
@@ -399,7 +415,7 @@
                         {% if settings.unavailable_indication == 'selected' %}
                           'anglethrough': {% if value.available %}false{% else %}true{% endif %},
                         {% endif %}
-                        'color__bg-overlay-1' : option{{ product_option.position }} == `{{ value | replace: ' ', '+' | base64_encode }}`
+                        'color__bg-overlay-1' : (selectedOptions[{{ product_option.position }}] == `{{ value | replace: ' ', '+' | base64_encode }}` || option{{ product_option.position }} == `{{ value | replace: ' ', '+' | base64_encode }}`)
                       }"
                       type="button"
                       data-option-value-id="{{ value.id }}"
@@ -420,12 +436,8 @@
                         option{{ product_option.position }} = null;
                         // Update variant when unselecting
                         handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', null);
-                        // Restore selection state after variant update
-                        setTimeout(() => {
-                          option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] || null;
-                        }, 100);
                       } else {
-                        // Select the option - update both values
+                        // Select the option - update both values FIRST
                         selectedOptions[{{ product_option.position }}] = newValue;
                         option{{ product_option.position }} = newValue;
                         // Update variant/price when selecting
@@ -434,10 +446,14 @@
                         {% else %}
                           handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', '{{ value.id }}');
                         {% endif %}
-                        // Restore selection state after variant update
-                        setTimeout(() => {
-                          option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] || newValue;
-                        }, 100);
+                      }
+                      // Always restore from selectedOptions after delays to ensure persistence
+                      setTimeout(() => {
+                        option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] !== undefined ? selectedOptions[{{ product_option.position }}] : option{{ product_option.position }};
+                      }, 300);
+                      setTimeout(() => {
+                        option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] !== undefined ? selectedOptions[{{ product_option.position }}] : option{{ product_option.position }};
+                      }, 800);
                       }
                       dropdown = false;
                       drag_drawer = false;
@@ -610,12 +626,8 @@
                     option{{ product_option.position }} = null;
                     // Update variant when unselecting
                     handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', null);
-                    // Restore selection state after variant update
-                    setTimeout(() => {
-                      option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] || null;
-                    }, 100);
                   } else {
-                    // Select the option - update both values
+                    // Select the option - update both values FIRST
                     selectedOptions[{{ product_option.position }}] = newValue;
                     option{{ product_option.position }} = newValue;
                     // Update variant/price when selecting
@@ -624,11 +636,14 @@
                     {% else %}
                       handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', '{{ value.id }}');
                     {% endif %}
-                    // Restore selection state after variant update
-                    setTimeout(() => {
-                      option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] || newValue;
-                    }, 100);
                   }
+                  // Always restore from selectedOptions after delays to ensure persistence
+                  setTimeout(() => {
+                    option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] !== undefined ? selectedOptions[{{ product_option.position }}] : option{{ product_option.position }};
+                  }, 300);
+                  setTimeout(() => {
+                    option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] !== undefined ? selectedOptions[{{ product_option.position }}] : option{{ product_option.position }};
+                  }, 800);
                 "
                   :disabled="product_loading"
                   data-option-value-id="{{ value.id }}"
