@@ -710,7 +710,13 @@ const products = {
   },
   fetchAndUpdateOptions(sectionId, productHandle, optionPosition, optionValueId, initialVariant, enableDefault = true, sellingPlanGroupId = 0, sellingPlanId = 0) {
     if (optionPosition && optionValueId) {
-      this.options_map.set(optionPosition, optionValueId);
+      // Allow users to unselect an already-selected option by clicking it again.
+      // This is especially important for bundle-builder flows where selections are optional.
+      if (this.options_map.get(optionPosition) === optionValueId) {
+        this.options_map.delete(optionPosition);
+      } else {
+        this.options_map.set(optionPosition, optionValueId);
+      }
     }
     let params = "";
     if (initialVariant) {
