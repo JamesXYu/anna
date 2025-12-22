@@ -49,8 +49,8 @@
       bundles_selected: false,
       bundles_size: {{ bundle_size }},
       updateBundle: function(index, id, price) {
-        if (id === '-' || id === null || id === undefined) {
-          // Remove item from bundle if unselected
+        // Remove item from bundle if unselected
+        if (id === '-' || id === null || id === undefined || id === '') {
           delete this.bundle_ids[index];
           delete this.bundle_prices[index];
         } else {
@@ -59,7 +59,9 @@
           this.bundle_prices[index] = price;
         }
         // Enable add to cart if at least one item is selected
-        const validSelections = Object.values(this.bundle_ids).filter(id => id !== '-' && id !== null && id !== undefined);
+        const validSelections = Object.values(this.bundle_ids).filter(id => {
+          return id !== '-' && id !== null && id !== undefined && id !== '';
+        });
         this.bundles_selected = validSelections.length > 0;
       }
     }
