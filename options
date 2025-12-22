@@ -53,14 +53,20 @@
         hidden
       {% endif %}
     "
+    x-data="{
+      selectedOptions: {}
+    }"
     x-init="
       // Reset all options to null on page load for bundle sets
       // Use setTimeout to ensure this runs after script initialization
       setTimeout(() => {
         {% for product_option in product.options_with_values %}
-          option{{ product_option.position }} = null;
+          if (typeof option{{ product_option.position }} !== 'undefined') {
+            option{{ product_option.position }} = null;
+          }
+          selectedOptions[{{ product_option.position }}] = null;
         {% endfor %}
-      }, 0);
+      }, 100);
     "
   >
     {% comment %} Warning {% endcomment %}
@@ -214,7 +220,7 @@
                       {% if settings.unavailable_indication == 'selected' %}
                         'anglethrough': {% if value.available %}false{% else %}true{% endif %},
                       {% endif %}
-                      'color__bg-overlay-1' : option{{ product_option.position }} == `{{ value | replace: ' ', '+' | base64_encode }}`,
+                      'color__bg-overlay-1' : (option{{ product_option.position }} == `{{ value | replace: ' ', '+' | base64_encode }}` || selectedOptions[{{ product_option.position }}] == `{{ value | replace: ' ', '+' | base64_encode }}`),
                     }"
                     type="button"
                     data-option-value-id="{{ value.id }}"
@@ -383,17 +389,22 @@
                       data-variant-id="{{ value.variant.id }}"
                       data-value="{{ value | replace: ' ', '+' | base64_encode }}"
                       title="{{ value }}"
-                      @click="
-                      const currentValue = String(option{{ product_option.position }} || '');
+                      @click.stop="
+                      $event.preventDefault();
+                      $event.stopPropagation();
                       const newValue = `{{ value | replace: ' ', '+' | base64_encode }}`;
-                      if (currentValue === newValue) {
+                      const currentValue = selectedOptions[{{ product_option.position }}] || option{{ product_option.position }} || null;
+                      const currentValueStr = currentValue ? String(currentValue) : '';
+                      if (currentValueStr === newValue) {
                         // Unselect if already selected
+                        selectedOptions[{{ product_option.position }}] = null;
                         option{{ product_option.position }} = null;
+                        console.log('Unselected option', {{ product_option.position }}, newValue);
                       } else {
-                        // Select the option - update the value directly
+                        // Select the option - update both values
+                        selectedOptions[{{ product_option.position }}] = newValue;
                         option{{ product_option.position }} = newValue;
-                        // Don't call handleProductFormChange to prevent resetting
-                        // This allows multiple independent selections for bundle sets
+                        console.log('Selected option', {{ product_option.position }}, newValue);
                       }
                       dropdown = false;
                       drag_drawer = false;
@@ -549,22 +560,27 @@
                       {% if settings.unavailable_indication == 'selected' %}
                         'anglethrough': {% if value.available %}false{% else %}true{% endif %},
                       {% endif %}
-                      'btn--plain border--focus--inset' : option{{ product_option.position }} == `{{ value | replace: ' ', '+' | base64_encode }}`,
-                      'btn--plain' : option{{ product_option.position }} != `{{ value | replace: ' ', '+' | base64_encode }}`,
+                      'btn--plain border--focus--inset' : (option{{ product_option.position }} == `{{ value | replace: ' ', '+' | base64_encode }}` || selectedOptions[{{ product_option.position }}] == `{{ value | replace: ' ', '+' | base64_encode }}`),
+                      'btn--plain' : (option{{ product_option.position }} != `{{ value | replace: ' ', '+' | base64_encode }}` && selectedOptions[{{ product_option.position }}] != `{{ value | replace: ' ', '+' | base64_encode }}`),
                     }
                   "
                   title="{{ value }}"
-                  @click="
-                  const currentValue = String(option{{ product_option.position }} || '');
+                  @click.stop="
+                  $event.preventDefault();
+                  $event.stopPropagation();
                   const newValue = `{{ value | replace: ' ', '+' | base64_encode }}`;
-                  if (currentValue === newValue) {
+                  const currentValue = selectedOptions[{{ product_option.position }}] || option{{ product_option.position }} || null;
+                  const currentValueStr = currentValue ? String(currentValue) : '';
+                  if (currentValueStr === newValue) {
                     // Unselect if already selected
+                    selectedOptions[{{ product_option.position }}] = null;
                     option{{ product_option.position }} = null;
+                    console.log('Unselected option', {{ product_option.position }}, newValue);
                   } else {
-                    // Select the option - update the value directly
+                    // Select the option - update both values
+                    selectedOptions[{{ product_option.position }}] = newValue;
                     option{{ product_option.position }} = newValue;
-                    // Don't call handleProductFormChange to prevent resetting
-                    // This allows multiple independent selections for bundle sets
+                    console.log('Selected option', {{ product_option.position }}, newValue);
                   }
                 "
                   :disabled="product_loading"
