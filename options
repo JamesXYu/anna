@@ -229,17 +229,36 @@
                     data-variant-id="{{ value.variant.id }}"
                     data-value="{{ value | replace: ' ', '+' | base64_encode }}"
                     title="{{ value }}"
-                    @click="
-                      const currentValue = String(option{{ product_option.position }} || '');
+                    @click.stop="
+                      $event.preventDefault();
+                      $event.stopPropagation();
                       const newValue = `{{ value | replace: ' ', '+' | base64_encode }}`;
-                      if (currentValue === newValue) {
+                      const currentValue = selectedOptions[{{ product_option.position }}] || option{{ product_option.position }} || null;
+                      const currentValueStr = currentValue ? String(currentValue) : '';
+                      if (currentValueStr === newValue) {
                         // Unselect if already selected
+                        selectedOptions[{{ product_option.position }}] = null;
                         option{{ product_option.position }} = null;
+                        // Update variant when unselecting
+                        handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', null);
+                        // Restore selection state after variant update
+                        setTimeout(() => {
+                          option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] || null;
+                        }, 100);
                       } else {
-                        // Select the option - update the value directly
+                        // Select the option - update both values
+                        selectedOptions[{{ product_option.position }}] = newValue;
                         option{{ product_option.position }} = newValue;
-                        // Don't call handleProductFormChange to prevent resetting
-                        // This allows multiple independent selections for bundle sets
+                        // Update variant/price when selecting
+                        {% if value.product_url %}
+                          handleCombinedListing('{{ value.product_url }}', '{{ section.id }}');
+                        {% else %}
+                          handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', '{{ value.id }}');
+                        {% endif %}
+                        // Restore selection state after variant update
+                        setTimeout(() => {
+                          option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] || newValue;
+                        }, 100);
                       }
                       dropdown = false;
                       drag_drawer = false;
@@ -399,12 +418,26 @@
                         // Unselect if already selected
                         selectedOptions[{{ product_option.position }}] = null;
                         option{{ product_option.position }} = null;
-                        console.log('Unselected option', {{ product_option.position }}, newValue);
+                        // Update variant when unselecting
+                        handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', null);
+                        // Restore selection state after variant update
+                        setTimeout(() => {
+                          option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] || null;
+                        }, 100);
                       } else {
                         // Select the option - update both values
                         selectedOptions[{{ product_option.position }}] = newValue;
                         option{{ product_option.position }} = newValue;
-                        console.log('Selected option', {{ product_option.position }}, newValue);
+                        // Update variant/price when selecting
+                        {% if value.product_url %}
+                          handleCombinedListing('{{ value.product_url }}', '{{ section.id }}');
+                        {% else %}
+                          handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', '{{ value.id }}');
+                        {% endif %}
+                        // Restore selection state after variant update
+                        setTimeout(() => {
+                          option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] || newValue;
+                        }, 100);
                       }
                       dropdown = false;
                       drag_drawer = false;
@@ -575,12 +608,26 @@
                     // Unselect if already selected
                     selectedOptions[{{ product_option.position }}] = null;
                     option{{ product_option.position }} = null;
-                    console.log('Unselected option', {{ product_option.position }}, newValue);
+                    // Update variant when unselecting
+                    handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', null);
+                    // Restore selection state after variant update
+                    setTimeout(() => {
+                      option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] || null;
+                    }, 100);
                   } else {
                     // Select the option - update both values
                     selectedOptions[{{ product_option.position }}] = newValue;
                     option{{ product_option.position }} = newValue;
-                    console.log('Selected option', {{ product_option.position }}, newValue);
+                    // Update variant/price when selecting
+                    {% if value.product_url %}
+                      handleCombinedListing('{{ value.product_url }}', '{{ section.id }}');
+                    {% else %}
+                      handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', '{{ value.id }}');
+                    {% endif %}
+                    // Restore selection state after variant update
+                    setTimeout(() => {
+                      option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] || newValue;
+                    }, 100);
                   }
                 "
                   :disabled="product_loading"
