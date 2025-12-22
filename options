@@ -53,6 +53,15 @@
         hidden
       {% endif %}
     "
+    x-init="
+      // Reset all options to null on page load for bundle sets
+      // Use setTimeout to ensure this runs after script initialization
+      setTimeout(() => {
+        {% for product_option in product.options_with_values %}
+          option{{ product_option.position }} = null;
+        {% endfor %}
+      }, 0);
+    "
   >
     {% comment %} Warning {% endcomment %}
     <p
@@ -214,7 +223,7 @@
                     data-value="{{ value | replace: ' ', '+' | base64_encode }}"
                     title="{{ value }}"
                     @click="
-                      const currentValue = option{{ product_option.position }};
+                      const currentValue = String(option{{ product_option.position }} || '');
                       const newValue = `{{ value | replace: ' ', '+' | base64_encode }}`;
                       if (currentValue === newValue) {
                         // Unselect if already selected
@@ -377,11 +386,12 @@
                       data-value="{{ value | replace: ' ', '+' | base64_encode }}"
                       title="{{ value }}"
                       @click="
-                      const currentValue = option{{ product_option.position }};
+                      const currentValue = String(option{{ product_option.position }} || '');
                       const newValue = `{{ value | replace: ' ', '+' | base64_encode }}`;
                       if (currentValue === newValue) {
                         // Unselect if already selected
                         option{{ product_option.position }} = null;
+                        // Don't call variant handler when unselecting
                       } else {
                         // Select the option
                         option{{ product_option.position }} = newValue;
@@ -551,11 +561,12 @@
                   "
                   title="{{ value }}"
                   @click="
-                  const currentValue = option{{ product_option.position }};
+                  const currentValue = String(option{{ product_option.position }} || '');
                   const newValue = `{{ value | replace: ' ', '+' | base64_encode }}`;
                   if (currentValue === newValue) {
                     // Unselect if already selected
                     option{{ product_option.position }} = null;
+                    // Don't call variant handler when unselecting
                   } else {
                     // Select the option
                     option{{ product_option.position }} = newValue;
