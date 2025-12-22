@@ -81,8 +81,8 @@
         "
         x-data="
           {
-            bundle_item_price: {{ product.price }},
-            bundle_item_id: {{ product.selected_or_first_available_variant.id }},
+            bundle_item_price: null,
+            bundle_item_id: '-',
           }
         "
       >
@@ -169,8 +169,8 @@
                   id="Variants-{{ product.id }}-{{ section.id }}"
                   class="w-full"
                   name="id"
+                  x-model="bundle_item_id"
                   @change="
-                    bundle_item_id = $event.target.value;
                     if (bundle_item_id === '-') {
                       bundle_item_price = null;
                       updateBundle({{ forloop.index0 }}, '-', null);
@@ -180,10 +180,7 @@
                     }
                   "
                 >
-                  <option
-                    value="-"
-                    selected="selected"
-                  >
+                  <option value="-">
                     Choose options
                   </option>
                   {% for variant in product.variants %}
