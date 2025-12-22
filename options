@@ -74,7 +74,8 @@
         $watch('option{{ product_option.position }}', (value) => {
           // If option was reset but we have it in selectedOptions, restore it
           // Skip if we're currently restoring to prevent loops
-          if (!restoringOptions && !value && selectedOptions[{{ product_option.position }}]) {
+          // Only restore if selectedOptions has a truthy value (not null)
+          if (!restoringOptions && !value && selectedOptions[{{ product_option.position }}] && selectedOptions[{{ product_option.position }}] !== null) {
             restoringOptions = true;
             setTimeout(() => {
               option{{ product_option.position }} = selectedOptions[{{ product_option.position }}];
@@ -253,12 +254,14 @@
                       const currentValueStr = currentValue ? String(currentValue) : '';
                       if (currentValueStr === newValue) {
                         // Unselect if already selected
+                        console.log('Unselecting option', {{ product_option.position }}, newValue);
                         selectedOptions[{{ product_option.position }}] = null;
                         option{{ product_option.position }} = null;
                         // Update variant when unselecting
                         handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', null);
                       } else {
                         // Select the option - update both values FIRST
+                        console.log('Selecting option', {{ product_option.position }}, newValue);
                         selectedOptions[{{ product_option.position }}] = newValue;
                         option{{ product_option.position }} = newValue;
                         // Update variant/price when selecting
@@ -269,13 +272,20 @@
                         {% endif %}
                       }
                       // Always restore from selectedOptions after delays to ensure persistence
+                      // This ensures selections persist even if handleProductFormChange resets them
                       setTimeout(() => {
-                        option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] !== undefined ? selectedOptions[{{ product_option.position }}] : option{{ product_option.position }};
+                        const storedValue = selectedOptions[{{ product_option.position }}];
+                        if (storedValue !== undefined) {
+                          option{{ product_option.position }} = storedValue;
+                          console.log('Restored option', {{ product_option.position }}, 'to', storedValue);
+                        }
                       }, 300);
                       setTimeout(() => {
-                        option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] !== undefined ? selectedOptions[{{ product_option.position }}] : option{{ product_option.position }};
+                        const storedValue = selectedOptions[{{ product_option.position }}];
+                        if (storedValue !== undefined) {
+                          option{{ product_option.position }} = storedValue;
+                        }
                       }, 800);
-                      }
                       dropdown = false;
                       drag_drawer = false;
                       enable_body_scrolling = true;
@@ -432,12 +442,14 @@
                       const currentValueStr = currentValue ? String(currentValue) : '';
                       if (currentValueStr === newValue) {
                         // Unselect if already selected
+                        console.log('Unselecting option', {{ product_option.position }}, newValue);
                         selectedOptions[{{ product_option.position }}] = null;
                         option{{ product_option.position }} = null;
                         // Update variant when unselecting
                         handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', null);
                       } else {
                         // Select the option - update both values FIRST
+                        console.log('Selecting option', {{ product_option.position }}, newValue);
                         selectedOptions[{{ product_option.position }}] = newValue;
                         option{{ product_option.position }} = newValue;
                         // Update variant/price when selecting
@@ -448,13 +460,20 @@
                         {% endif %}
                       }
                       // Always restore from selectedOptions after delays to ensure persistence
+                      // This ensures selections persist even if handleProductFormChange resets them
                       setTimeout(() => {
-                        option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] !== undefined ? selectedOptions[{{ product_option.position }}] : option{{ product_option.position }};
+                        const storedValue = selectedOptions[{{ product_option.position }}];
+                        if (storedValue !== undefined) {
+                          option{{ product_option.position }} = storedValue;
+                          console.log('Restored option', {{ product_option.position }}, 'to', storedValue);
+                        }
                       }, 300);
                       setTimeout(() => {
-                        option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] !== undefined ? selectedOptions[{{ product_option.position }}] : option{{ product_option.position }};
+                        const storedValue = selectedOptions[{{ product_option.position }}];
+                        if (storedValue !== undefined) {
+                          option{{ product_option.position }} = storedValue;
+                        }
                       }, 800);
-                      }
                       dropdown = false;
                       drag_drawer = false;
                       enable_body_scrolling = true;
@@ -639,10 +658,16 @@
                   }
                   // Always restore from selectedOptions after delays to ensure persistence
                   setTimeout(() => {
-                    option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] !== undefined ? selectedOptions[{{ product_option.position }}] : option{{ product_option.position }};
+                    const storedValue = selectedOptions[{{ product_option.position }}];
+                    if (storedValue !== undefined) {
+                      option{{ product_option.position }} = storedValue;
+                    }
                   }, 300);
                   setTimeout(() => {
-                    option{{ product_option.position }} = selectedOptions[{{ product_option.position }}] !== undefined ? selectedOptions[{{ product_option.position }}] : option{{ product_option.position }};
+                    const storedValue = selectedOptions[{{ product_option.position }}];
+                    if (storedValue !== undefined) {
+                      option{{ product_option.position }} = storedValue;
+                    }
                   }, 800);
                 "
                   :disabled="product_loading"
