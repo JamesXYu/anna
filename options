@@ -53,39 +53,6 @@
         hidden
       {% endif %}
     "
-    x-data="{
-      selectedOptions: {},
-      restoringOptions: false,
-      deselectingOptions: {}
-    }"
-    x-init="
-      // Reset all options to null on page load for bundle sets
-      // Use setTimeout to ensure this runs after script initialization
-      setTimeout(() => {
-        {% for product_option in product.options_with_values %}
-          if (typeof option{{ product_option.position }} !== 'undefined') {
-            option{{ product_option.position }} = null;
-          }
-          selectedOptions[{{ product_option.position }}] = null;
-        {% endfor %}
-      }, 100);
-      
-      // Watch for option changes and restore from selectedOptions
-      {% for product_option in product.options_with_values %}
-        $watch('option{{ product_option.position }}', (value) => {
-          // If option was reset but we have it in selectedOptions, restore it
-          // Skip if we're currently restoring or deselecting to prevent loops
-          // Only restore if selectedOptions has a truthy value (not null or undefined)
-          if (!restoringOptions && !deselectingOptions[{{ product_option.position }}] && !value && selectedOptions[{{ product_option.position }}] && selectedOptions[{{ product_option.position }}] !== null && selectedOptions[{{ product_option.position }}] !== undefined) {
-            restoringOptions = true;
-            setTimeout(() => {
-              option{{ product_option.position }} = selectedOptions[{{ product_option.position }}];
-              restoringOptions = false;
-            }, 150);
-          }
-        });
-      {% endfor %}
-    "
   >
     {% comment %} Warning {% endcomment %}
     <p
@@ -238,7 +205,6 @@
                       {% if settings.unavailable_indication == 'selected' %}
                         'anglethrough': {% if value.available %}false{% else %}true{% endif %},
                       {% endif %}
-                      'color__bg-overlay-1' : (option{{ product_option.position }} == `{{ value | replace: ' ', '+' | base64_encode }}` || selectedOptions[{{ product_option.position }}] == `{{ value | replace: ' ', '+' | base64_encode }}`),
                     }"
                     type="button"
                     data-option-value-id="{{ value.id }}"
@@ -247,72 +213,20 @@
                     data-variant-id="{{ value.variant.id }}"
                     data-value="{{ value | replace: ' ', '+' | base64_encode }}"
                     title="{{ value }}"
-                    @click.stop="
-                      $event.preventDefault();
-                      $event.stopPropagation();
+                    @click="
+                      const currentValue = option{{ product_option.position }};
                       const newValue = `{{ value | replace: ' ', '+' | base64_encode }}`;
-                      const currentValue = selectedOptions[{{ product_option.position }}] !== undefined ? selectedOptions[{{ product_option.position }}] : (option{{ product_option.position }} || null);
-                      const currentValueStr = currentValue ? String(currentValue) : '';
-                      const isCurrentlySelected = currentValueStr === newValue;
-                      
-                      if (isCurrentlySelected) {
+                      if (currentValue === newValue) {
                         // Unselect if already selected
-                        console.log('Unselecting option', {{ product_option.position }}, 'from', currentValueStr, 'to null');
-                        deselectingOptions[{{ product_option.position }}] = true;
-                        delete selectedOptions[{{ product_option.position }}];
                         option{{ product_option.position }} = null;
-                        // Don't call handleProductFormChange when deselecting to avoid reset
-                        // Clear deselecting flag after a delay
-                        setTimeout(() => {
-                          deselectingOptions[{{ product_option.position }}] = false;
-                        }, 1000);
                       } else {
-                        // Select the option - update both values FIRST
-                        console.log('Selecting option', {{ product_option.position }}, 'from', currentValueStr, 'to', newValue);
-                        selectedOptions[{{ product_option.position }}] = newValue;
+                        // Select the option
                         option{{ product_option.position }} = newValue;
-                        // Update variant/price when selecting
                         {% if value.product_url %}
                           handleCombinedListing('{{ value.product_url }}', '{{ section.id }}');
                         {% else %}
-                          handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', '{{ value.id }}');
+                           handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', '{{ value.id }}');
                         {% endif %}
-                      }
-                      // Always restore from selectedOptions after delays to ensure persistence
-                      // But skip restoration if we're deselecting
-                      if (!deselectingOptions[{{ product_option.position }}]) {
-                        setTimeout(() => {
-                          const storedValue = selectedOptions[{{ product_option.position }}];
-                          if (storedValue !== undefined) {
-                            option{{ product_option.position }} = storedValue;
-                            console.log('Restored option', {{ product_option.position }}, 'to', storedValue);
-                          }
-                        }, 100);
-                        setTimeout(() => {
-                          const storedValue = selectedOptions[{{ product_option.position }}];
-                          if (storedValue !== undefined) {
-                            option{{ product_option.position }} = storedValue;
-                          }
-                        }, 300);
-                        setTimeout(() => {
-                          const storedValue = selectedOptions[{{ product_option.position }}];
-                          if (storedValue !== undefined) {
-                            option{{ product_option.position }} = storedValue;
-                          }
-                        }, 800);
-                      } else {
-                        // When deselecting, ensure it stays null
-                        setTimeout(() => {
-                          if (deselectingOptions[{{ product_option.position }}]) {
-                            option{{ product_option.position }} = null;
-                            console.log('Ensured option', {{ product_option.position }}, 'stays null');
-                          }
-                        }, 100);
-                        setTimeout(() => {
-                          if (deselectingOptions[{{ product_option.position }}]) {
-                            option{{ product_option.position }} = null;
-                          }
-                        }, 300);
                       }
                       dropdown = false;
                       drag_drawer = false;
@@ -453,7 +367,7 @@
                         {% if settings.unavailable_indication == 'selected' %}
                           'anglethrough': {% if value.available %}false{% else %}true{% endif %},
                         {% endif %}
-                        'color__bg-overlay-1' : (selectedOptions[{{ product_option.position }}] == `{{ value | replace: ' ', '+' | base64_encode }}` || option{{ product_option.position }} == `{{ value | replace: ' ', '+' | base64_encode }}`)
+                        'color__bg-overlay-1' : option{{ product_option.position }} == `{{ value | replace: ' ', '+' | base64_encode }}`
                       }"
                       type="button"
                       data-option-value-id="{{ value.id }}"
@@ -462,72 +376,20 @@
                       data-variant-id="{{ value.variant.id }}"
                       data-value="{{ value | replace: ' ', '+' | base64_encode }}"
                       title="{{ value }}"
-                      @click.stop="
-                      $event.preventDefault();
-                      $event.stopPropagation();
+                      @click="
+                      const currentValue = option{{ product_option.position }};
                       const newValue = `{{ value | replace: ' ', '+' | base64_encode }}`;
-                      const currentValue = selectedOptions[{{ product_option.position }}] !== undefined ? selectedOptions[{{ product_option.position }}] : (option{{ product_option.position }} || null);
-                      const currentValueStr = currentValue ? String(currentValue) : '';
-                      const isCurrentlySelected = currentValueStr === newValue;
-                      
-                      if (isCurrentlySelected) {
+                      if (currentValue === newValue) {
                         // Unselect if already selected
-                        console.log('Unselecting option', {{ product_option.position }}, 'from', currentValueStr, 'to null');
-                        deselectingOptions[{{ product_option.position }}] = true;
-                        delete selectedOptions[{{ product_option.position }}];
                         option{{ product_option.position }} = null;
-                        // Don't call handleProductFormChange when deselecting to avoid reset
-                        // Clear deselecting flag after a delay
-                        setTimeout(() => {
-                          deselectingOptions[{{ product_option.position }}] = false;
-                        }, 1000);
                       } else {
-                        // Select the option - update both values FIRST
-                        console.log('Selecting option', {{ product_option.position }}, 'from', currentValueStr, 'to', newValue);
-                        selectedOptions[{{ product_option.position }}] = newValue;
+                        // Select the option
                         option{{ product_option.position }} = newValue;
-                        // Update variant/price when selecting
                         {% if value.product_url %}
                           handleCombinedListing('{{ value.product_url }}', '{{ section.id }}');
                         {% else %}
-                          handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', '{{ value.id }}');
+                           handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', '{{ value.id }}');
                         {% endif %}
-                      }
-                      // Always restore from selectedOptions after delays to ensure persistence
-                      // But skip restoration if we're deselecting
-                      if (!deselectingOptions[{{ product_option.position }}]) {
-                        setTimeout(() => {
-                          const storedValue = selectedOptions[{{ product_option.position }}];
-                          if (storedValue !== undefined) {
-                            option{{ product_option.position }} = storedValue;
-                            console.log('Restored option', {{ product_option.position }}, 'to', storedValue);
-                          }
-                        }, 100);
-                        setTimeout(() => {
-                          const storedValue = selectedOptions[{{ product_option.position }}];
-                          if (storedValue !== undefined) {
-                            option{{ product_option.position }} = storedValue;
-                          }
-                        }, 300);
-                        setTimeout(() => {
-                          const storedValue = selectedOptions[{{ product_option.position }}];
-                          if (storedValue !== undefined) {
-                            option{{ product_option.position }} = storedValue;
-                          }
-                        }, 800);
-                      } else {
-                        // When deselecting, ensure it stays null
-                        setTimeout(() => {
-                          if (deselectingOptions[{{ product_option.position }}]) {
-                            option{{ product_option.position }} = null;
-                            console.log('Ensured option', {{ product_option.position }}, 'stays null');
-                          }
-                        }, 100);
-                        setTimeout(() => {
-                          if (deselectingOptions[{{ product_option.position }}]) {
-                            option{{ product_option.position }} = null;
-                          }
-                        }, 300);
                       }
                       dropdown = false;
                       drag_drawer = false;
@@ -683,77 +545,25 @@
                       {% if settings.unavailable_indication == 'selected' %}
                         'anglethrough': {% if value.available %}false{% else %}true{% endif %},
                       {% endif %}
-                      'btn--plain border--focus--inset' : (option{{ product_option.position }} == `{{ value | replace: ' ', '+' | base64_encode }}` || selectedOptions[{{ product_option.position }}] == `{{ value | replace: ' ', '+' | base64_encode }}`),
-                      'btn--plain' : (option{{ product_option.position }} != `{{ value | replace: ' ', '+' | base64_encode }}` && selectedOptions[{{ product_option.position }}] != `{{ value | replace: ' ', '+' | base64_encode }}`),
+                      'btn--plain border--focus--inset' : option{{ product_option.position }} == `{{ value | replace: ' ', '+' | base64_encode }}`,
+                      'btn--plain' : option{{ product_option.position }} != `{{ value | replace: ' ', '+' | base64_encode }}`,
                     }
                   "
                   title="{{ value }}"
-                  @click.stop="
-                  $event.preventDefault();
-                  $event.stopPropagation();
+                  @click="
+                  const currentValue = option{{ product_option.position }};
                   const newValue = `{{ value | replace: ' ', '+' | base64_encode }}`;
-                  const currentValue = selectedOptions[{{ product_option.position }}] !== undefined ? selectedOptions[{{ product_option.position }}] : (option{{ product_option.position }} || null);
-                  const currentValueStr = currentValue ? String(currentValue) : '';
-                  const isCurrentlySelected = currentValueStr === newValue;
-                  
-                  if (isCurrentlySelected) {
+                  if (currentValue === newValue) {
                     // Unselect if already selected
-                    console.log('Unselecting option', {{ product_option.position }}, 'from', currentValueStr, 'to null');
-                    deselectingOptions[{{ product_option.position }}] = true;
-                    delete selectedOptions[{{ product_option.position }}];
                     option{{ product_option.position }} = null;
-                    // Don't call handleProductFormChange when deselecting to avoid reset
-                    // Clear deselecting flag after a delay
-                    setTimeout(() => {
-                      deselectingOptions[{{ product_option.position }}] = false;
-                    }, 1000);
                   } else {
-                    // Select the option - update both values FIRST
-                    console.log('Selecting option', {{ product_option.position }}, 'from', currentValueStr, 'to', newValue);
-                    selectedOptions[{{ product_option.position }}] = newValue;
+                    // Select the option
                     option{{ product_option.position }} = newValue;
-                    // Update variant/price when selecting
                     {% if value.product_url %}
                       handleCombinedListing('{{ value.product_url }}', '{{ section.id }}');
                     {% else %}
                       handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', '{{ value.id }}');
                     {% endif %}
-                  }
-                  // Always restore from selectedOptions after delays to ensure persistence
-                  // But skip restoration if we're deselecting
-                  if (!deselectingOptions[{{ product_option.position }}]) {
-                    setTimeout(() => {
-                      const storedValue = selectedOptions[{{ product_option.position }}];
-                      if (storedValue !== undefined) {
-                        option{{ product_option.position }} = storedValue;
-                        console.log('Restored option', {{ product_option.position }}, 'to', storedValue);
-                      }
-                    }, 100);
-                    setTimeout(() => {
-                      const storedValue = selectedOptions[{{ product_option.position }}];
-                      if (storedValue !== undefined) {
-                        option{{ product_option.position }} = storedValue;
-                      }
-                    }, 300);
-                    setTimeout(() => {
-                      const storedValue = selectedOptions[{{ product_option.position }}];
-                      if (storedValue !== undefined) {
-                        option{{ product_option.position }} = storedValue;
-                      }
-                    }, 800);
-                  } else {
-                    // When deselecting, ensure it stays null
-                    setTimeout(() => {
-                      if (deselectingOptions[{{ product_option.position }}]) {
-                        option{{ product_option.position }} = null;
-                        console.log('Ensured option', {{ product_option.position }}, 'stays null');
-                      }
-                    }, 100);
-                    setTimeout(() => {
-                      if (deselectingOptions[{{ product_option.position }}]) {
-                        option{{ product_option.position }} = null;
-                      }
-                    }, 300);
                   }
                 "
                   :disabled="product_loading"
