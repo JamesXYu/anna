@@ -53,6 +53,15 @@
         hidden
       {% endif %}
     "
+    x-init="
+      // Reset all options to null on page load for bundle sets
+      // Use setTimeout to ensure this runs after script initialization
+      setTimeout(() => {
+        {% for product_option in product.options_with_values %}
+          option{{ product_option.position }} = null;
+        {% endfor %}
+      }, 0);
+    "
   >
     {% comment %} Warning {% endcomment %}
     <p
@@ -205,6 +214,7 @@
                       {% if settings.unavailable_indication == 'selected' %}
                         'anglethrough': {% if value.available %}false{% else %}true{% endif %},
                       {% endif %}
+                      'color__bg-overlay-1' : option{{ product_option.position }} == `{{ value | replace: ' ', '+' | base64_encode }}`,
                     }"
                     type="button"
                     data-option-value-id="{{ value.id }}"
@@ -214,19 +224,16 @@
                     data-value="{{ value | replace: ' ', '+' | base64_encode }}"
                     title="{{ value }}"
                     @click="
-                      const currentValue = option{{ product_option.position }};
+                      const currentValue = String(option{{ product_option.position }} || '');
                       const newValue = `{{ value | replace: ' ', '+' | base64_encode }}`;
                       if (currentValue === newValue) {
                         // Unselect if already selected
                         option{{ product_option.position }} = null;
                       } else {
-                        // Select the option
+                        // Select the option - update the value directly
                         option{{ product_option.position }} = newValue;
-                        {% if value.product_url %}
-                          handleCombinedListing('{{ value.product_url }}', '{{ section.id }}');
-                        {% else %}
-                           handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', '{{ value.id }}');
-                        {% endif %}
+                        // Don't call handleProductFormChange to prevent resetting
+                        // This allows multiple independent selections for bundle sets
                       }
                       dropdown = false;
                       drag_drawer = false;
@@ -377,19 +384,16 @@
                       data-value="{{ value | replace: ' ', '+' | base64_encode }}"
                       title="{{ value }}"
                       @click="
-                      const currentValue = option{{ product_option.position }};
+                      const currentValue = String(option{{ product_option.position }} || '');
                       const newValue = `{{ value | replace: ' ', '+' | base64_encode }}`;
                       if (currentValue === newValue) {
                         // Unselect if already selected
                         option{{ product_option.position }} = null;
                       } else {
-                        // Select the option
+                        // Select the option - update the value directly
                         option{{ product_option.position }} = newValue;
-                        {% if value.product_url %}
-                          handleCombinedListing('{{ value.product_url }}', '{{ section.id }}');
-                        {% else %}
-                           handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', '{{ value.id }}');
-                        {% endif %}
+                        // Don't call handleProductFormChange to prevent resetting
+                        // This allows multiple independent selections for bundle sets
                       }
                       dropdown = false;
                       drag_drawer = false;
@@ -551,19 +555,16 @@
                   "
                   title="{{ value }}"
                   @click="
-                  const currentValue = option{{ product_option.position }};
+                  const currentValue = String(option{{ product_option.position }} || '');
                   const newValue = `{{ value | replace: ' ', '+' | base64_encode }}`;
                   if (currentValue === newValue) {
                     // Unselect if already selected
                     option{{ product_option.position }} = null;
                   } else {
-                    // Select the option
+                    // Select the option - update the value directly
                     option{{ product_option.position }} = newValue;
-                    {% if value.product_url %}
-                      handleCombinedListing('{{ value.product_url }}', '{{ section.id }}');
-                    {% else %}
-                      handleProductFormChange(null,'{{ section.id }}', '{{ product.handle | handle }}', '{{ product_option.position }}', '{{ value.id }}');
-                    {% endif %}
+                    // Don't call handleProductFormChange to prevent resetting
+                    // This allows multiple independent selections for bundle sets
                   }
                 "
                   :disabled="product_loading"
